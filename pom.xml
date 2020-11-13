@@ -13,14 +13,13 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>pnckafka</name>
     <description>Demo project for Spring Boot</description>
-    <repositories>
-        <repository>
-            <id>confluent</id>
-            <url>https://packages.confluent.io/maven/</url>
-        </repository>
-    </repositories>
     <properties>
         <java.version>11</java.version>
+		<schema.registry.url>http://localhost:8081</schema.registry.url>
+		<schema.local.folder>src/main/resources/schema</schema.local.folder>
+		<avro.version>1.9.1</avro.version>
+		<confluent.version>6.0.0</confluent.version>
+		<schema.generated.folder>${project.build.directory}/generated-sources</schema.generated.folder>
     </properties>
 
     <dependencies>
@@ -31,8 +30,23 @@
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-avro-serializer</artifactId>
-            <version>6.0.0</version>
+            <version>${confluent.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
         </dependency>
+		<dependency>
+			<groupId>io.confluent</groupId>
+			<artifactId>kafka-schema-registry-client</artifactId>
+			<version>${confluent.version}</version>
+		</dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.13</artifactId>
@@ -42,7 +56,7 @@
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-streams-avro-serde</artifactId>
-            <version>6.0.0</version>
+            <version>${confluent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -83,13 +97,175 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.avro</groupId>
+				<artifactId>avro-maven-plugin</artifactId>
+				<version>${avro.version}</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>schema</goal>
+							<goal>protocol</goal>
+							<goal>idl-protocol</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${schema.local.folder}</sourceDirectory>
+							<outputDirectory>${schema.generated.folder}</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>io.confluent</groupId>
+				<artifactId>kafka-schema-registry-maven-plugin</artifactId>
+				<version>${confluent.version}</version>
+				<configuration>
+					<schemaRegistryUrls>
+						<param>${schema.registry.url}</param>
+					</schemaRegistryUrls>
+					<outputDirectory>${schema.local.folder}</outputDirectory>
+					<subjectPatterns>
+						<param>^Balance-(value)$</param>
+						<param>^Customer-(value)$</param>
+						<param>^CustomerBalance-(value)$</param>
+					</subjectPatterns>
+					<subjects/>
+				</configuration>
+				<goals>
+					<goal>download</goal>
+				</goals>
+			</plugin>
+			<plugin>
+				<groupId>io.confluent</groupId>
+				<artifactId>kafka-schema-registry-maven-plugin</artifactId>
+				<version>${confluent.version}</version>
+				<configuration>
+					<schemaRegistryUrls>
+						<param>${schema.registry.url}</param>
+					</schemaRegistryUrls>
+					<subjects>
+						<Balance-value>${schema.local.folder}/Balance-value.avsc</Balance-value>
+						<Customer-value>${schema.local.folder}/Customer-value.avsc</Customer-value>
+						<CustomerBalance-value>${schema.local.folder}/CustomerBalance-value.avsc</CustomerBalance-value>
+					</subjects>
+					<outputDirectory/>
+				</configuration>
+				<goals>
+					<goal>register</goal>
+				</goals>
+			</plugin>
+			<plugin>
+				<groupId>io.confluent</groupId>
+				<artifactId>kafka-schema-registry-maven-plugin</artifactId>
+				<version>${confluent.version}</version>
+				<configuration>
+					<schemaRegistryUrls>
+						<param>${schema.registry.url}</param>
+					</schemaRegistryUrls>
+					<subjects>
+						<Balance-value>${schema.local.folder}/Balance-value.avsc</Balance-value>
+						<Customer-value>${schema.local.folder}/Customer-value.avsc</Customer-value>
+						<CustomerBalance-value>${schema.local.folder}/CustomerBalance-value.avsc</CustomerBalance-value>
+					</subjects>
+					<outputDirectory/>
+				</configuration>
+				<goals>
+					<goal>validate</goal>
+				</goals>
+			</plugin>
+			<plugin>
+				<groupId>io.confluent</groupId>
+				<artifactId>kafka-schema-registry-maven-plugin</artifactId>
+				<version>${confluent.version}</version>
+				<configuration>
+					<schemaRegistryUrls>
+						<param>${schema.registry.url}</param>
+					</schemaRegistryUrls>
+					<subjects>
+						<Balance-value>${schema.local.folder}/Balance-value.avsc</Balance-value>
+						<Customer-value>${schema.local.folder}/Customer-value.avsc</Customer-value>
+						<CustomerBalance-value>${schema.local.folder}/CustomerBalance-value.avsc</CustomerBalance-value>
+					</subjects>
+					<outputDirectory/>
+				</configuration>
+				<goals>
+					<goal>test-compatibility</goal>
+				</goals>
+			</plugin>
+		</plugins>
+	</build>
 
+	<repositories>
+		<repository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>https://repo.spring.io/libs-snapshot-local</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/libs-milestone-local</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>spring-releases</id>
+			<name>Spring Releases</name>
+			<url>https://repo.spring.io/release</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>confluent</id>
+			<url>https://packages.confluent.io/maven/</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>https://repo.spring.io/libs-snapshot-local</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</pluginRepository>
+		<pluginRepository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/libs-milestone-local</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>spring-releases</id>
+			<name>Spring Releases</name>
+			<url>https://repo.spring.io/libs-release-local</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>confluent</id>
+			<url>https://packages.confluent.io/maven/</url>
+		</pluginRepository>
+	</pluginRepositories>
 </project>
