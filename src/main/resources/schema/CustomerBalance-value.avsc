@@ -1,0 +1,1 @@
+{"type":"record","name":"CustomerBalance","namespace":"com.ibm.pnckafka.model","fields":[{"name":"accountId","type":["null", "string"], "default": null},{"name":"customerId","type":["null", "string"], "default": null},{"name":"phoneNumber","type":["null", "string"], "default": null},{"name":"balance","type":["null", "float"], "default": null}]}

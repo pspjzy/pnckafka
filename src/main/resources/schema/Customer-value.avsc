@@ -1,0 +1,1 @@
+{"type":"record","name":"Customer","namespace":"com.ibm.pnckafka.model","fields":[{"name":"customerId","type":{"type":"string","avro.java.string":"String"}},{"name":"name","type":{"type":"string","avro.java.string":"String"}},{"name":"phoneNumber","type":{"type":"string","avro.java.string":"String"}},{"name":"accountId","type":{"type":"string","avro.java.string":"String"}}]}
